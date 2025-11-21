@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { PlaceholderCard, EmptyState } from './Placeholders'
 
 const API = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
@@ -13,20 +14,29 @@ export default function Doctors(){
     fetch(`${API}/api/doctors`).then(r=>r.json()).then(setDoctors).catch(()=>setError('Failed to load')).finally(()=>setLoading(false))
   },[])
 
+  const seed = async ()=>{
+    const samples = [
+      { name:'Dr. Rowan Moss', specialty:'Herbalist', clinic:'Willow Clinic', location:'Glade Town', rating:5, bio:'Gentle remedies drawn from moonlit leaves.' },
+      { name:'Dr. Elowen Fern', specialty:'Forest Therapist', clinic:'Whispering Pines', location:'Evervale', rating:4, bio:'Mindful walks and breath among ancient trees.' },
+      { name:'Dr. Thorne Briar', specialty:'Mycology', clinic:'Lantern Caps Lab', location:'Mirebrook', rating:5, bio:'Guardian of safe shrooms and glowing caps.' }
+    ]
+    for(const d of samples){
+      await fetch(`${API}/api/doctors`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(d)})
+    }
+    const fresh = await (await fetch(`${API}/api/doctors`)).json()
+    setDoctors(fresh)
+  }
+
   const submit = async (e)=>{
     e.preventDefault()
     setAdding(true)
     setError('')
     try{
       const res = await fetch(`${API}/api/doctors`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(form)})
-      const data = await res.json()
-      if(data.id){
-        const fresh = await (await fetch(`${API}/api/doctors`)).json()
-        setDoctors(fresh)
-        setForm({name:'', specialty:'', bio:'', photo_url:'', rating:5, clinic:'', location:''})
-      }else{
-        setError('Unable to add doctor')
-      }
+      await res.json()
+      const fresh = await (await fetch(`${API}/api/doctors`)).json()
+      setDoctors(fresh)
+      setForm({name:'', specialty:'', bio:'', photo_url:'', rating:5, clinic:'', location:''})
     }catch(err){
       setError('Network error')
     }finally{
@@ -37,10 +47,14 @@ export default function Doctors(){
   return (
     <div className="grid md:grid-cols-3 gap-6">
       <div className="md:col-span-2">
-        {loading ? <p className="text-purple-100">Loading...</p> : (
+        {loading ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Array.from({length:6}).map((_,i)=> <PlaceholderCard key={i} title="Doctor" lines={3} />)}
+          </div>
+        ) : doctors.length ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {doctors.map(doc=> (
-              <div key={doc.id} className="group rounded-2xl bg-white/5 border border-white/10 p-4 transition hover:bg-white/7.5">
+              <div key={doc.id} className="group rounded-2xl bg-white/5 border border-white/10 p-4 transition hover:bg-white/10">
                 <div className="aspect-square rounded-xl overflow-hidden bg-gradient-to-tr from-purple-700/30 to-emerald-600/30">
                   {doc.photo_url && <img src={doc.photo_url} alt={doc.name} className="w-full h-full object-cover" />}
                 </div>
@@ -59,6 +73,11 @@ export default function Doctors(){
                 </div>
               </div>
             ))}
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            <EmptyState title="No doctors yet" subtitle="Add a few trusted professionals or seed examples." />
+            <button onClick={seed} className="w-fit px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-emerald-500 text-white shadow">Seed sample doctors</button>
           </div>
         )}
         {error && <p className="text-red-300 mt-3">{error}</p>}
@@ -81,6 +100,9 @@ export default function Doctors(){
           </label>
           <button disabled={adding} className="mt-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-emerald-500 text-white shadow disabled:opacity-60">{adding? 'Adding...' : 'Add Doctor'}</button>
         </form>
+        {!loading && !doctors.length && (
+          <button onClick={seed} className="mt-3 w-full px-4 py-2 rounded-lg bg-white/10 text-white border border-white/10">Seed sample doctors</button>
+        )}
       </div>
     </div>
   )

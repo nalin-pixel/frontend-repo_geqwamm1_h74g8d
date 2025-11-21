@@ -7,6 +7,7 @@ import Resources from './components/Resources'
 import Doctors from './components/Doctors'
 import Contact from './components/Contact'
 import About from './components/About'
+import CursorGlow from './components/CursorGlow'
 
 function Home(){
   return (
@@ -44,6 +45,7 @@ function App(){
           <Route path="/contact" element={<Section title="Contact"><Contact /></Section>} />
         </Routes>
         <footer className="py-10 text-center text-purple-200/70">Made with a little fairy dust ✨</footer>
+        <CursorGlow />
       </div>
     </BrowserRouter>
   )
